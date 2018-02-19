@@ -58,11 +58,58 @@ defmodule Changeset do
 end
 
 defmodule Changeset.Op do
+	@moduledoc """
+	Module for creating a single changeset operation
+	"""
+
 	defstruct opcode: "", chars: 0, lines: 0, attribs: ""
 
+	@doc """
+	Return a Changeset.Op struct
+	"""
 	def new(opts \\ []) do
 		%Changeset.Op{
 			opcode: Keyword.get(opts, :opcode, "")
 		}
+	end
+
+	@doc """
+	Returns a Changeset.Op struct from a regex map on the op string
+	"""
+	def from_regex_match([_, attribs, lines, opcode, chars]) do
+		lines = unless lines === "",
+			do: elem(Integer.parse(lines), 0), else: 0
+		chars = elem(Integer.parse(chars), 0)
+
+		%Changeset.Op{
+			opcode: opcode,
+			attribs: attribs,
+			lines: lines,
+			chars: chars
+		}
+	end
+end
+
+defmodule Changeset.OpIterator do
+	@doc """
+	Returns a list of Changeset.Op structs from an op string
+
+	## Examples
+
+		iex> Changeset.OpIterator.get_ops("*0*3+5-2*0*1+3")
+		[
+			%Changeset.Op{attribs: "*0*3", chars: 5, lines: 0, opcode: "+"},
+			%Changeset.Op{attribs: "", chars: 2, lines: 0, opcode: "-"},
+			%Changeset.Op{attribs: "*0*1", chars: 3, lines: 0, opcode: "+"}
+		]
+	"""
+	def get_ops(op_str) do
+		Regex.scan(~r/((?:\*[0-9a-z]+)*)(?:\|([0-9a-z]+))?([-+=])([0-9a-z]+)|\?|/, op_str)
+		 # Remove empty matches
+		|> Stream.filter(&(Enum.at(&1, 0) != ""))
+		 # Convert to list of Ops
+		|> Enum.reduce([], fn(match, ops) -> [Changeset.Op.from_regex_match(match) | ops] end)
+		 # Reverse since previous step did things backwards
+		|> Enum.reverse
 	end
 end
