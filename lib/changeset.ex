@@ -19,7 +19,7 @@ defmodule Changeset do
 	## Examples
 
 		iex> Changeset.unpack("Z:3>5=1*0*1+2=2*0+3$hello")
-		[old_len: 3, new_len: 8, ops: "=1*0*1+2=2*0+3", char_bank: "hello"]
+		%Changeset{old_len: 3, new_len: 8, ops: "=1*0*1+2=2*0+3", char_bank: "hello"}
 	"""
 	def unpack(cs) do
 		[header, old_len, change_sign, len_change]
@@ -45,15 +45,15 @@ defmodule Changeset do
 
 	## Examples
 
-		iex> Changeset.pack([{:old_len, 1},{:new_len, 4},{:ops, "=1*0+3"},{:char_bank, "hey"}])
-		"Z:1>3=1*0+3$hey"``
+		iex> Changeset.pack(%Changeset{old_len: 1,new_len: 4,ops: "=1*0+3",char_bank: "hey"})
+		"Z:1>3=1*0+3$hey"
 	"""
 	def pack(cs) do
 		len_change = Integer.to_string(cs.new_len - cs.old_len)
 		change_sign = if len_change >= 0, do: ">", else: "<"
 		old_len = Integer.to_string(cs.old_len)
 
-		"Z:" <> old_len <> change_sign <> cs.len_change <> cs.ops <> "$" <> cs.char_bank
+		"Z:" <> old_len <> change_sign <> len_change <> cs.ops <> "$" <> cs.char_bank
 	end
 end
 
