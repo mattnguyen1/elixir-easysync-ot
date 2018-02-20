@@ -1,6 +1,7 @@
 # Elixir Operational Transform Library
 
 [![Master](https://travis-ci.org/mattnguyen1/elixir-easysync-ot.svg?branch=master)](https://travis-ci.org/mattnguyen1/elixir-easysync-ot)
+[![Coverage Status](https://coveralls.io/repos/github/mattnguyen1/elixir-epl-ot/badge.svg?branch=master)](https://coveralls.io/github/mattnguyen1/elixir-epl-ot?branch=master)
 
 An operational transform library based off of EPL's OT library built in Elixir 
 
