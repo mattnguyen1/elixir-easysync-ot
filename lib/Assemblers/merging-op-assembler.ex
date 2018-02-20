@@ -1,13 +1,5 @@
 defmodule MergingOpAssembler do
-	import ChangesetHelpers
 	defstruct assem: %OpAssembler{}, buf_op: %Op{}, chars_after_newline: 0
-
-	@doc """
-	Returns the op string of a flushed assembler
-	"""
-	def to_string(assem) do
-		OpAssembler.to_string(flush(assem).assem)
-	end
 
 	@doc """
 	Returns the flushed assembler with the intent to end the document
@@ -32,7 +24,7 @@ defmodule MergingOpAssembler do
 	end of a changeset without any attribs)
 	"""
 	def flush(assem = %MergingOpAssembler{ buf_op: %Op{ opcode: "=", attribs: ""}}, true), do: assem
-	def flush(assem, is_document_end), do: flush(assem)
+	def flush(assem, _), do: flush(assem)
 
 	# If there are chars after newline, then append them into the assembler
 	defp maybe_flush_chars_after_newline(assem, 0), do: assem
@@ -43,6 +35,18 @@ defmodule MergingOpAssembler do
 			buf_op: %Op{},
 			chars_after_newline: 0
 		}
+	end
+end
+
+defimpl Assem, for: MergingOpAssembler do
+	import ChangesetHelpers
+	import MergingOpAssembler
+
+	@doc """
+	Returns the op string of a flushed assembler
+	"""
+	def to_string(assem) do
+		OpAssembler.to_string(flush(assem).assem)
 	end
 
 	@doc ~S"""
@@ -99,5 +103,4 @@ defmodule MergingOpAssembler do
 			chars_after_newline: 0
 		}
 	end
-
 end
