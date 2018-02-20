@@ -2,7 +2,7 @@
 
 [![Master](https://travis-ci.org/mattnguyen1/elixir-easysync-ot.svg?branch=master)](https://travis-ci.org/mattnguyen1/elixir-easysync-ot)
 
-An operational transform library based off of easysync built in Elixir 
+An operational transform library based off of EPL's OT library built in Elixir 
 
 ## Installation
 
