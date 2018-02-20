@@ -1,6 +1,6 @@
 # Elixir Operational Transform Library
 
-[![Master](https://travis-ci.org/mattnguyen1/elixir-easysync-ot.svg?branch=master)](https://travis-ci.org/mattnguyen1/elixir-easysync-ot)
+[![Master](https://travis-ci.org/mattnguyen1/elixir-epl-ot.svg?branch=master)](https://travis-ci.org/mattnguyen1/elixir-epl-ot)
 [![Coverage Status](https://coveralls.io/repos/github/mattnguyen1/elixir-epl-ot/badge.svg?branch=master)](https://coveralls.io/github/mattnguyen1/elixir-epl-ot?branch=master)
 
 An operational transform library based off of [EPL's OT library](https://github.com/ether/etherpad-lite/wiki/Changeset-Library) built in Elixir 
@@ -8,7 +8,7 @@ An operational transform library based off of [EPL's OT library](https://github.
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `elixir_easysync_ot` to your list of dependencies in `mix.exs`:
+by adding `elixir_epl_ot` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
