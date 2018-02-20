@@ -55,9 +55,20 @@ defmodule Changeset do
 
 		"Z:" <> old_len <> change_sign <> len_change <> cs.ops <> "$" <> cs.char_bank
 	end
+
+	# def apply_zip(op_str_1, index_1, op_str_2, index_2, zip_func) do
+	# 	ops1 = Op.get_ops_from_str(op_str_1)
+	# 		|> Enum.slice(index_1..-1)
+	# 	ops2 = Op.get_ops_from_str(op_str_2)
+	# 		|> Enum.slice(index_2..-1)
+	#
+	# 	apply_zip(ops1, ops2, zip_func)
+	# end
+	#
+	# def apply_zip([], [], zip_func)
 end
 
-defmodule Changeset.Op do
+defmodule Op do
 	@moduledoc """
 	Module for creating a single changeset operation
 	"""
@@ -65,51 +76,46 @@ defmodule Changeset.Op do
 	defstruct opcode: "", chars: 0, lines: 0, attribs: ""
 
 	@doc """
-	Return a Changeset.Op struct
+	Return a Op struct
 	"""
 	def new(opts \\ []) do
-		%Changeset.Op{
+		%Op{
 			opcode: Keyword.get(opts, :opcode, "")
 		}
 	end
 
 	@doc """
-	Returns a Changeset.Op struct from a regex map on the op string
+	Returns a Op struct from a regex map on the op string
 	"""
 	def from_regex_match([_, attribs, lines, opcode, chars]) do
 		lines = unless lines === "",
 			do: elem(Integer.parse(lines), 0), else: 0
 		chars = elem(Integer.parse(chars), 0)
 
-		%Changeset.Op{
+		%Op{
 			opcode: opcode,
 			attribs: attribs,
 			lines: lines,
 			chars: chars
 		}
 	end
-end
 
-defmodule Changeset.OpIterator do
 	@doc """
-	Returns a list of Changeset.Op structs from an op string
+	Returns a list of Op structs from an op string
 
 	## Examples
 
-		iex> Changeset.OpIterator.get_ops("*0*3+5-2*0*1+3")
+		iex> Op.get_ops_from_str("*0*3+5-2*0*1+3")
 		[
-			%Changeset.Op{attribs: "*0*3", chars: 5, lines: 0, opcode: "+"},
-			%Changeset.Op{attribs: "", chars: 2, lines: 0, opcode: "-"},
-			%Changeset.Op{attribs: "*0*1", chars: 3, lines: 0, opcode: "+"}
+			%Op{attribs: "*0*3", chars: 5, lines: 0, opcode: "+"},
+			%Op{attribs: "", chars: 2, lines: 0, opcode: "-"},
+			%Op{attribs: "*0*1", chars: 3, lines: 0, opcode: "+"}
 		]
 	"""
-	def get_ops(op_str) do
+	def get_ops_from_str(op_str) do
 		Regex.scan(~r/((?:\*[0-9a-z]+)*)(?:\|([0-9a-z]+))?([-+=])([0-9a-z]+)|\?|/, op_str)
-		 # Remove empty matches
 		|> Stream.filter(&(Enum.at(&1, 0) != ""))
-		 # Convert to list of Ops
-		|> Enum.reduce([], fn(match, ops) -> [Changeset.Op.from_regex_match(match) | ops] end)
-		 # Reverse since previous step did things backwards
+		|> Enum.reduce([], fn(match, ops) -> [from_regex_match(match) | ops] end)
 		|> Enum.reverse
 	end
 end
