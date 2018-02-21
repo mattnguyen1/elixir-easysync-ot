@@ -1,5 +1,4 @@
 defmodule SmartOpAssembler do
-	import MergingOpAssembler
 	import StringAssembler
 
 	defstruct [
@@ -38,6 +37,7 @@ defimpl Assem, for: SmartOpAssembler do
 
 	def append(assem, %Op{ opcode: ""}), do: assem
 	def append(assem, %Op{ chars: 0}), do: assem
+	def append(assem, nil), do: assem
 	def append(assem, op = %Op{ opcode: "-"}) do
 		append_with_assem(assem, :delete_assem, op)
 	end
@@ -64,7 +64,7 @@ defimpl Assem, for: SmartOpAssembler do
 	defp maybe_flush_before_append(assem, %Op{ opcode: "="}) do
 		if assem.last_opcode !== "=", do: flush_insert_delete(assem), else: assem
 	end
-	defp maybe_flush_before_append(assem, op) do
+	defp maybe_flush_before_append(assem, _) do
 		if assem.last_opcode === "=", do: flush_keeps(assem), else: assem
 	end
 end

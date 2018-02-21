@@ -3,6 +3,7 @@ defmodule Changeset do
 	This module contains a set of functions used to manipulate easysync based
 	changesets for operational transforms.
 	"""
+	import Op
 
 	defstruct old_len: 0, new_len: 0, ops: "", char_bank: ""
 
@@ -56,66 +57,31 @@ defmodule Changeset do
 		"Z:" <> old_len <> change_sign <> len_change <> cs.ops <> "$" <> cs.char_bank
 	end
 
-	# def apply_zip(op_str_1, index_1, op_str_2, index_2, zip_func) do
-	# 	ops1 = Op.get_ops_from_str(op_str_1)
-	# 		|> Enum.slice(index_1..-1)
-	# 	ops2 = Op.get_ops_from_str(op_str_2)
-	# 		|> Enum.slice(index_2..-1)
-	#
-	# 	apply_zip(ops1, ops2, zip_func)
-	# end
-	#
-	# def apply_zip([], [], zip_func)
-end
+	def apply_zip(op_str_1, index_1, op_str_2, index_2, zip_func) do
+		ops1 = Op.get_ops_from_str(op_str_1)
+			|> Enum.slice(index_1..-1)
+		ops2 = Op.get_ops_from_str(op_str_2)
+			|> Enum.slice(index_2..-1)
+		assem = %SmartOpAssembler{}
 
-defmodule Op do
-	@moduledoc """
-	Module for creating a single changeset operation
-	"""
-
-	defstruct opcode: "", chars: 0, lines: 0, attribs: ""
-
-	@doc """
-	Return a Op struct
-	"""
-	def new(opts \\ []) do
-		%Op{
-			opcode: Keyword.get(opts, :opcode, "")
-		}
+		apply_zip(assem, ops1, ops2, nil, nil, zip_func)
 	end
 
-	@doc """
-	Returns a Op struct from a regex map on the op string
-	"""
-	def from_regex_match([_, attribs, lines, opcode, chars]) do
-		lines = unless lines === "",
-			do: elem(Integer.parse(lines), 0), else: 0
-		chars = elem(Integer.parse(chars), 0)
-
-		%Op{
-			opcode: opcode,
-			attribs: attribs,
-			lines: lines,
-			chars: chars
-		}
+	def apply_zip(assem, [], [], nil, nil, _) do
+		SmartOpAssembler.end_document(assem)
+		|> Assem.to_string
+	end
+	def apply_zip(assem, op_list1, op_list2, op1, op2, zip_func) do
+		[op1 | op_list1] = take_op(op1, op_list1)
+		[op2 | op_list2] = take_op(op2, op_list2)
+		{op1, op2, op_out} = zip_func.(op1, op2)
+		apply_zip(
+			Assem.append(assem, op_out),
+			op_list1, op_list2, op1, op2, zip_func
+		)
 	end
 
-	@doc """
-	Returns a list of Op structs from an op string
-
-	## Examples
-
-		iex> Op.get_ops_from_str("*0*3+5-2*0*1+3")
-		[
-			%Op{attribs: "*0*3", chars: 5, lines: 0, opcode: "+"},
-			%Op{attribs: "", chars: 2, lines: 0, opcode: "-"},
-			%Op{attribs: "*0*1", chars: 3, lines: 0, opcode: "+"}
-		]
-	"""
-	def get_ops_from_str(op_str) do
-		Regex.scan(~r/((?:\*[0-9a-z]+)*)(?:\|([0-9a-z]+))?([-+=])([0-9a-z]+)|\?|/, op_str)
-		|> Stream.filter(&(Enum.at(&1, 0) != ""))
-		|> Enum.reduce([], fn(match, ops) -> [from_regex_match(match) | ops] end)
-		|> Enum.reverse
-	end
+	defp take_op(nil, arr = [_ | _]), do: arr
+	defp take_op(nil, []), do: [nil | []]
+	defp take_op(op, arr), do: [op | arr]
 end
