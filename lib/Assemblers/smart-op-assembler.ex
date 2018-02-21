@@ -10,6 +10,12 @@ defmodule SmartOpAssembler do
 		length_change: 0
 	]
 
+	def end_document(assem) do
+		%SmartOpAssembler{assem |
+			keep_assem: MergingOpAssembler.end_document(assem.keep_assem)
+		}
+	end
+
 	def flush_keeps(assem) do
 		%SmartOpAssembler{assem |
 			assem: Assem.append(assem.assem, Assem.to_string(assem.keep_assem)),
