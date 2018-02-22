@@ -3,26 +3,24 @@ defmodule Op do
 	@moduledoc """
 	Module for creating a single changeset operation
 	"""
-
 	defstruct opcode: "", chars: 0, lines: 0, attribs: ""
 
 	@doc """
-	Return a Op struct
-	"""
-	def new(opts \\ []) do
-		%Op{
-			opcode: Keyword.get(opts, :opcode, "")
-		}
-	end
-
-	@doc """
 	Returns a Op struct from a regex map on the op string
+
+	## Examples
+
+		iex>Op.from_regex_match(["*0*2|3+7", "*0*2", "3", "+", "7"])
+		%Op{
+			opcode: "+",
+			attribs: "*0*2",
+			lines: 3,
+			chars: 7
+		}
 	"""
 	def from_regex_match([_, attribs, lines, opcode, chars]) do
-		lines = unless lines === "",
-			do: elem(Integer.parse(lines), 0), else: 0
-		chars = elem(Integer.parse(chars), 0)
-
+		{lines, _} = parse_integer(lines)
+		{chars, _} = parse_integer(chars)
 		%Op{
 			opcode: opcode,
 			attribs: attribs,
@@ -30,6 +28,7 @@ defmodule Op do
 			chars: chars
 		}
 	end
+	defp parse_integer(str), do: if str === "", do: {0, ""}, else: Integer.parse(str)
 
 	@doc """
 	Returns a list of Op structs from an op string

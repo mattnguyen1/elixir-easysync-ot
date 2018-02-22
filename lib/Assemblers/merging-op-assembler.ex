@@ -10,7 +10,7 @@ defmodule MergingOpAssembler do
 	Appends the buffer op if it exists. Also append an extra buffer if there
 	is something to add after the newline
 	"""
-	def flush(assem = %MergingOpAssembler{ buf_op: %Op{ opcode: ""}}), do: assem
+	def flush(assem = %MergingOpAssembler{buf_op: %Op{opcode: ""}}), do: assem
 	def flush(assem) do
 		%MergingOpAssembler{assem |
 			assem: OpAssembler.append(assem.assem, assem.buf_op)
@@ -23,7 +23,7 @@ defmodule MergingOpAssembler do
 	the buffer op is an implicit keep. (An implicit keep is a keep at the
 	end of a changeset without any attribs)
 	"""
-	def flush(assem = %MergingOpAssembler{ buf_op: %Op{ opcode: "=", attribs: ""}}, true), do: assem
+	def flush(assem = %MergingOpAssembler{buf_op: %Op{ opcode: "=", attribs: ""}}, true), do: assem
 	def flush(assem, _), do: flush(assem)
 
 	# If there are chars after newline, then append them into the assembler
@@ -80,7 +80,7 @@ defimpl Assem, for: MergingOpAssembler do
 	end
 
 	# Neither the buffer nor the op is multi-lined, so just modify the chars
-	defp merge_op_into_buffer(assem = %MergingOpAssembler{ buf_op: %Op{lines: 0}}, op = %Op{ lines: 0}) do
+	defp merge_op_into_buffer(assem = %MergingOpAssembler{buf_op: %Op{lines: 0}}, op = %Op{lines: 0}) do
 		%MergingOpAssembler{assem |
 			buf_op: %Op{assem.buf_op |
 				chars: assem.buf_op.chars + op.chars
@@ -88,7 +88,7 @@ defimpl Assem, for: MergingOpAssembler do
 		}
 	end
 	# Op is not multilined, but buffer is, so modify chars_after_newline with op
-	defp merge_op_into_buffer(assem, op = %Op{ lines: 0}) do
+	defp merge_op_into_buffer(assem, op = %Op{lines: 0}) do
 		%MergingOpAssembler{assem |
 			chars_after_newline: assem.chars_after_newline + op.chars
 		}

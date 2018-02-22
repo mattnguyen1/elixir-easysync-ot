@@ -3,8 +3,6 @@ defmodule Changeset do
 	This module contains a set of functions used to manipulate easysync based
 	changesets for operational transforms.
 	"""
-	import Op
-
 	defstruct old_len: 0, new_len: 0, ops: "", char_bank: ""
 
 	@doc """
@@ -57,6 +55,10 @@ defmodule Changeset do
 		"Z:" <> old_len <> change_sign <> len_change <> cs.ops <> "$" <> cs.char_bank
 	end
 
+	@doc """
+	Iterates over two op strings and applies a zip function over the ops
+	to continuously output new ops until a new op string is formed.
+	"""
 	def apply_zip(op_str_1, index_1, op_str_2, index_2, zip_func) do
 		ops1 = Op.get_ops_from_str(op_str_1)
 			|> Enum.slice(index_1..-1)
@@ -66,7 +68,6 @@ defmodule Changeset do
 
 		apply_zip(assem, ops1, ops2, nil, nil, zip_func)
 	end
-
 	def apply_zip(assem, [], [], nil, nil, _) do
 		SmartOpAssembler.end_document(assem)
 		|> Assem.to_string
