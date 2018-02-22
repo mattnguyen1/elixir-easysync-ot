@@ -51,9 +51,7 @@ defimpl Assem, for: SmartOpAssembler do
 		Assem.to_string(assem.assem)
 	end
 
-	def append(assem, %Op{opcode: ""}), do: assem
 	def append(assem, %Op{chars: 0}), do: assem
-	def append(assem, nil), do: assem
 	def append(assem, op = %Op{opcode: "-"}) do
 		append_with_assem(assem, :delete_assem, op)
 	end
@@ -63,6 +61,7 @@ defimpl Assem, for: SmartOpAssembler do
 	def append(assem, op = %Op{opcode: "="}) do
 		append_with_assem(assem, :keep_assem, op)
 	end
+	def append(assem, _), do: assem
 
 	defp append_with_assem(assem, opcode_assem_type, op) do
 		maybe_flush_before_append(assem, op)
