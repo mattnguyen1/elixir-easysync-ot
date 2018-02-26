@@ -5,6 +5,9 @@ defmodule Changeset do
 	"""
 	defstruct old_len: 0, new_len: 0, ops: "", char_bank: ""
 
+	import Op
+	import ChangesetHelpers
+
 	@doc """
 	Returns an empty Changeset struct
 	"""
@@ -85,4 +88,94 @@ defmodule Changeset do
 	defp take_op(nil, arr = [_ | _]), do: arr
 	defp take_op(nil, []), do: [nil | []]
 	defp take_op(op, arr), do: [op | arr]
+
+	@doc """
+	Zip function that will use a composition strategy when zipping two ops in
+	order to produce a single op.
+	Composition strategy is the following priority list:
+	1. Base op deletes, so the next op isn't taken into account yet since there
+	is no opcode that can change the fact that the base op has deleted something.
+	In this case, just output the base op.
+	2. There is no base op, so just output the next op.
+	3. Next op deletes, which means it is deleting something that the base op
+	is either keeping or adding. Output an op with the magnitude of what was deleted.
+	4. Next op inserts, in which case, the base op would not have any knowledge about,
+	and so just output the next op.
+	5. Next op keeps, which means just keep whatever was in the base op, and if needed,
+	compose the attributes if the next op keep had any.
+	"""
+	def zip_by_compose(base_op = %Op{opcode: "-"}, next_op, _), do: {nil, next_op, base_op}
+	def zip_by_compose(nil, next_op, _), do: {nil, nil, next_op}
+	def zip_by_compose(base_op, next_op = %Op{opcode: "-"}, _) do
+		slice(base_op, next_op, base_op.opcode === "=")
+	end
+	def zip_by_compose(base_op, next_op = %Op{opcode: "+"}, _) do
+		{base_op, :nil, next_op}
+	end
+	def zip_by_compose(base_op, next_op = %Op{opcode: "="}, pool) do
+		{base_op, next_op, output_op} = slice(base_op, next_op, true)
+		{base_op, next_op, %Op{output_op |
+			attribs: ""
+		}}
+	end
+
+	defp slice(base_op, next_op, has_output_op) do
+		cond do
+			base_op.chars === next_op.chars ->
+				{:nil, :nil, maybe_copy(base_op, has_output_op)}
+			base_op.chars > next_op.chars ->
+				{Op.slice_op(base_op, next_op), :nil, maybe_copy(next_op, has_output_op)}
+			true ->
+				{:nil, Op.slice_op(next_op, base_op), maybe_copy(base_op, has_output_op)}
+		end
+	end
+	defp maybe_copy(op_to_copy, true), do: Op.copy_magnitude(op_to_copy)
+	defp maybe_copy(_, false), do: :nil
+
+	@doc """
+	Composes two attribute strings into a single attribute string
+	"""
+	def compose_attributes(:nil, next_attrib_str, true, _), do: next_attrib_str
+	def compose_attributes(base_attrib_str, :nil, _, _), do: base_attrib_str
+	def compose_attributes(base_attrib_str, next_attrib_str, can_delete_attrib, pool) do
+		attrib_map = attrib_str_to_map(base_attrib_str, pool)
+		next_attrib_num_list = attrib_str_to_num(next_attrib_str, pool)
+
+		Enum.reduce(next_attrib_num_list, attrib_map, fn attr_num, map ->
+			[attrib_key, attrib_value] = AttributePool.get(pool, attr_num)
+			if Map.has_key?(map, attrib_key) do
+				maybe_put_attrib(map, attrib_key, attrib_value, can_delete_attrib)
+				|> maybe_delete_attrib(attrib_key, attrib_value, can_delete_attrib)
+			else
+				maybe_put_attrib(map, attrib_key, attrib_value, can_delete_attrib)
+			end
+		end)
+		|> Map.to_list()
+		|> Enum.sort_by(&{elem(&1, 0), String.first(elem(&1, 1))})
+		|> Enum.map(fn {k, v} -> [k, v] end)
+		|> Enum.reduce(%StringAssembler{}, fn attrib, assem ->
+			pool = AttributePool.put(pool, attrib)
+			Assem.append(assem, "*")
+			|> Assem.append(AttributePool.get_num_str(pool, attrib)) end)
+		|> (&({pool, Assem.to_string(&1)})).()
+	end
+
+	defp maybe_put_attrib(map, attrib_key, new_attrib_val, can_delete_attrib)
+	defp maybe_put_attrib(map, _, "", false), do: map
+	defp maybe_put_attrib(map, attrib_key, new_attrib_val, _),
+		do: Map.put(map, attrib_key, new_attrib_val)
+
+	defp maybe_delete_attrib(map, attrib_key, new_attrib_val, can_delete_attrib)
+	defp maybe_delete_attrib(map, attrib_key, "", false),
+		do: Map.delete(map, attrib_key)
+	defp maybe_delete_attrib(map,_,_,_), do: map
+
+	defp attrib_str_to_num(attrib_str, pool) do
+		Regex.scan(~r/\*([0-9a-z]+)/, attrib_str)
+		|> Enum.map(fn [_, num] -> base36_str_to_num(num) end)
+	end
+	defp attrib_str_to_map(attrib_str, pool) do
+		attrib_str_to_num(attrib_str, pool)
+		|> Map.new(&AttributePool.get_as_tuple(pool, &1))
+	end
 end

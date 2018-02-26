@@ -48,4 +48,27 @@ defmodule Op do
 		|> Enum.reduce([], fn(match, ops) -> [from_regex_match(match) | ops] end)
 		|> Enum.reverse
 	end
+
+	@doc """
+	Copies the magnitude of the chars and lines of an op, but not its opcode
+	or its attributes.
+
+	## Examples
+
+		iex> Op.copy_magnitude(%Op{chars: 5, lines: 2, attribs: "*0", opcode: "+"})
+		%Op{chars: 5, lines: 2, attribs: "", opcode: ""}
+	"""
+	def copy_magnitude(op_to_copy) do
+		%Op{op_to_copy |
+			opcode: "",
+			attribs: ""
+		}
+	end
+
+	def slice_op(op_to_slice, magnitude_op) do
+		%Op{op_to_slice |
+			chars: op_to_slice.chars - magnitude_op.chars,
+			lines: op_to_slice.lines - magnitude_op.lines
+		}
+	end
 end

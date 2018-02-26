@@ -8,6 +8,13 @@ defmodule ChangesetHelpers do
 	end
 
 	@doc """
+	Convert a string of a base 36 number to an integer in base 10
+	"""
+	def base36_str_to_num(str) do
+		elem(Integer.parse(str, 36), 0)
+	end
+
+	@doc """
 	Returns whether two ops can properly merge into a single op
 	"""
 	def ops_can_merge?(op1, op2) do
