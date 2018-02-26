@@ -46,6 +46,9 @@ defmodule AttributePool do
 		Map.get(pool.attr_to_num, Attribute.to_string(attrib))
 	end
 
+	@doc """
+	Gets the attrib num as a base 36 string from a pool
+	"""
 	def get_num_str(pool, attrib) do
 		get_num(pool, attrib)
 		|> ChangesetHelpers.num_to_base36_str()

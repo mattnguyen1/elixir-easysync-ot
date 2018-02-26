@@ -65,6 +65,10 @@ defmodule Op do
 		}
 	end
 
+	@doc """
+	Returns the op to slice subtracted by the amount of chars and lines
+	in the magnitude op
+	"""
 	def slice_op(op_to_slice, magnitude_op) do
 		%Op{op_to_slice |
 			chars: op_to_slice.chars - magnitude_op.chars,

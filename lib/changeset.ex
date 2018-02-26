@@ -71,10 +71,14 @@ defmodule Changeset do
 
 		apply_zip(assem, ops1, ops2, nil, nil, zip_func)
 	end
+
+	# Exhausted all ops
 	def apply_zip(assem, [], [], nil, nil, _) do
 		SmartOpAssembler.end_document(assem)
 		|> Assem.to_string
 	end
+
+	# Some op still can be taken
 	def apply_zip(assem, op_list1, op_list2, op1, op2, zip_func) do
 		[op1 | op_list1] = take_op(op1, op_list1)
 		[op2 | op_list2] = take_op(op2, op_list2)
@@ -104,14 +108,26 @@ defmodule Changeset do
 	5. Next op keeps, which means just keep whatever was in the base op, and if needed,
 	compose the attributes if the next op keep had any.
 	"""
+	def zip_by_compose(base_op, next_op, pool)
+
+	# Base op is a delete -> output base op
 	def zip_by_compose(base_op = %Op{opcode: "-"}, next_op, _), do: {nil, next_op, base_op}
+
+	# Base op is exhausted -> output next op
 	def zip_by_compose(nil, next_op, _), do: {nil, nil, next_op}
+
+	# Next op is a delete -> output a deletion with no attribs of the amount sliced
 	def zip_by_compose(base_op, next_op = %Op{opcode: "-"}, _) do
 		slice(base_op, next_op, base_op.opcode === "=")
+		|> modify_compose_output("-", "")
 	end
+
+	# Next op is an insert -> output the next op
 	def zip_by_compose(base_op, next_op = %Op{opcode: "+"}, _) do
 		{base_op, :nil, next_op}
 	end
+
+	# Next op is a keep ->
 	def zip_by_compose(base_op, next_op = %Op{opcode: "="}, pool) do
 		{base_op, next_op, output_op} = slice(base_op, next_op, true)
 		{base_op, next_op, %Op{output_op |
@@ -129,17 +145,29 @@ defmodule Changeset do
 				{:nil, Op.slice_op(next_op, base_op), maybe_copy(base_op, has_output_op)}
 		end
 	end
+
 	defp maybe_copy(op_to_copy, true), do: Op.copy_magnitude(op_to_copy)
 	defp maybe_copy(_, false), do: :nil
+
+	defp modify_compose_output(result = {_, _, nil}, _, _), do: result
+	defp modify_compose_output({base_op, next_op, output_op}, opcode, attribs),
+		do: {base_op, next_op, %Op{output_op | opcode: opcode, attribs: attribs}}
 
 	@doc """
 	Composes two attribute strings into a single attribute string
 	"""
+	def compose_attributes(base_attrib_str, next_attrib_str, can_delete_attrib, pool)
+
+	# Only next attrib string exists
 	def compose_attributes(:nil, next_attrib_str, true, _), do: next_attrib_str
+
+	# Only base attrib string exists
 	def compose_attributes(base_attrib_str, :nil, _, _), do: base_attrib_str
+
+	# Both strings exist, so compose
 	def compose_attributes(base_attrib_str, next_attrib_str, can_delete_attrib, pool) do
 		attrib_map = attrib_str_to_map(base_attrib_str, pool)
-		next_attrib_num_list = attrib_str_to_num(next_attrib_str, pool)
+		next_attrib_num_list = attrib_str_to_num(next_attrib_str)
 
 		Enum.reduce(next_attrib_num_list, attrib_map, fn attr_num, map ->
 			[attrib_key, attrib_value] = AttributePool.get(pool, attr_num)
@@ -170,12 +198,12 @@ defmodule Changeset do
 		do: Map.delete(map, attrib_key)
 	defp maybe_delete_attrib(map,_,_,_), do: map
 
-	defp attrib_str_to_num(attrib_str, pool) do
+	defp attrib_str_to_num(attrib_str) do
 		Regex.scan(~r/\*([0-9a-z]+)/, attrib_str)
 		|> Enum.map(fn [_, num] -> base36_str_to_num(num) end)
 	end
 	defp attrib_str_to_map(attrib_str, pool) do
-		attrib_str_to_num(attrib_str, pool)
+		attrib_str_to_num(attrib_str)
 		|> Map.new(&AttributePool.get_as_tuple(pool, &1))
 	end
 end
