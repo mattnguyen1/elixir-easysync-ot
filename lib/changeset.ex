@@ -116,6 +116,9 @@ defmodule Changeset do
 	# Base op is exhausted -> output next op
 	def zip_by_compose(nil, next_op, _), do: {nil, nil, next_op}
 
+	# Next op is exhausted -> output base op
+	def zip_by_compose(base_op, nil, _), do: {nil, nil, base_op}
+
 	# Next op is a delete -> output a deletion with no attribs of the amount sliced
 	def zip_by_compose(base_op, next_op = %Op{opcode: "-"}, _) do
 		slice(base_op, next_op, base_op.opcode === "=")
@@ -127,11 +130,12 @@ defmodule Changeset do
 		{base_op, :nil, next_op}
 	end
 
-	# Next op is a keep ->
+	# Next op is a keep -> slice and compose attributes for the output
 	def zip_by_compose(base_op, next_op = %Op{opcode: "="}, pool) do
 		{base_op, next_op, output_op} = slice(base_op, next_op, true)
 		{base_op, next_op, %Op{output_op |
-			attribs: ""
+			opcode: base_op.opcode,
+			attribs: compose_attributes(base_op.attribs, next_op.attribs, base_op.opcode === "=", pool)
 		}}
 	end
 
